@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Lorcana Autocomplete</title>
+  <style>
+    #autocomplete-list {
+      border: 1px solid #ccc;
+      max-height: 150px;
+      overflow-y: auto;
+      position: absolute;
+      background-color: white;
+      z-index: 1000;
+      width: 300px;
+    }
+    .autocomplete-item {
+      padding: 4px;
+      cursor: pointer;
+    }
+    .autocomplete-item:hover {
+      background-color: #eee;
+    }
+    #text {
+      width: 300px;
+      padding: 6px;
+    }
+  </style>
+</head>
+<body>
+  <h2>Lorcana Autocomplete</h2>
+  <p>Start typing <code>=a...</code> to see predictions:</p>
+  <textarea id="text" rows="10"></textarea>
+  <div id="autocomplete-list"></div>
+
+  <script>
+    let cardList = [];
+
+    fetch('https://script.google.com/macros/s/AKfycbxirfCxs-GrCROAzVk1sIB5yr1IUUl3LhyqQBE_RZ_Z-307zvD0S1WiiLDPjq6VlhcI/exec')
+      .then(response => response.json())
+      .then(data => cardList = data)
+      .catch(err => console.error('Error fetching JSON:', err));
+
+    const input = document.getElementById('text');
+    const autocompleteList = document.getElementById('autocomplete-list');
+
+    input.addEventListener('input', function () {
+      const cursorPos = input.selectionStart;
+      const text = input.value.slice(0, cursorPos);
+      const match = text.match(/=([a-zA-Z\s\-']*)$/);
+      if (!match) {
+        autocompleteList.innerHTML = '';
+        return;
+      }
+
+      const query = match[1].toLowerCase();
+      const matches = cardList.filter(card => card.toLowerCase().startsWith(query)).slice(0, 10);
+
+      autocompleteList.innerHTML = '';
+      const rect = input.getBoundingClientRect();
+      autocompleteList.style.top = `${rect.bottom + window.scrollY}px`;
+      autocompleteList.style.left = `${rect.left + window.scrollX}px`;
+
+      matches.forEach(match => {
+        const div = document.createElement('div');
+        div.className = 'autocomplete-item';
+        div.textContent = match;
+        div.onclick = () => {
+          const before = text.replace(/=([a-zA-Z\s\-']*)$/, match);
+          const after = input.value.slice(cursorPos);
+          input.value = before + after;
+          input.focus();
+          autocompleteList.innerHTML = '';
+        };
+        autocompleteList.appendChild(div);
+      });
+    });
+  </script>
+</body>
+</html>
